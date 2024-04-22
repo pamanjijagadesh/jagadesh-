@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRUD Web App</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background-color: #f2f2f2;
+    }
+    h1 {
+        text-align: center;
+    }
+    form {
+        margin-bottom: 20px;
+    }
+    label {
+        display: block;
+        margin-bottom: 5px;
+    }
+    input[type="text"], input[type="number"] {
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 10px;
+        box-sizing: border-box;
+    }
+    button {
+        padding: 8px 16px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        cursor: pointer;
+        border-radius: 4px;
+    }
+    button:hover {
+        background-color: #45a049;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: white;
+    }
+    th, td {
+        padding: 8px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+    #navigation {
+        margin-bottom: 20px;
+    }
+    #navigation a {
+        background-color: #008CBA;
+        color: white;
+        padding: 10px;
+        text-decoration: none;
+        border-radius: 4px;
+    }
+    #navigation a:hover {
+        background-color: #005f76;
+    }
+    #addPage, #editPage {
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+    }
+</style>
+</head>
+<body>
+
+<h1>CRUD Web App</h1>
+
+<div id="navigation">
+    <a href="#" onclick="showPage('home')">Home</a> |
+    <a href="#" onclick="showPage('add')">Add Book</a>
+</div>
+
+<div id="homePage">
+    <table id="bookTable">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Pages</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="bookList">
+        </tbody>
+    </table>
+</div>
+
+<div id="addPage" style="display: none;">
+    <h2>Add Book</h2>
+    <form id="bookForm">
+        <label for="title">Title:</label>
+        <input type="text" id="title" required>
+        <label for="author">Author:</label>
+        <input type="text" id="author" required>
+        <label for="pages">Pages:</label>
+        <input type="number" id="pages" required>
+        <button type="submit" id="addBtn">Add Book</button>
+    </form>
+</div>
+
+<div id="editPage" style="display: none;">
+    <h2>Edit Book</h2>
+    <form id="editForm">
+        <input type="hidden" id="editId">
+        <label for="editTitle">Title:</label>
+        <input type="text" id="editTitle" required>
+        <label for="editAuthor">Author:</label>
+        <input type="text" id="editAuthor" required>
+        <label for="editPages">Pages:</label>
+        <input type="number" id="editPages" required>
+        <button type="submit" id="updateBtn">Update Book</button>
+    </form>
+</div>
+
+<script>
+    // Load books from local storage
+    let books = JSON.parse(localStorage.getItem('books')) || [];
+
+    // Function to display books
+    function displayBooks() {
+        const bookList = document.getElementById('bookList');
+        bookList.innerHTML = '';
+
+        books.forEach(book => {
+            const row = `<tr>
+                            <td>${book.title}</td>
+                            <td>${book.author}</td>
+                            <td>${book.pages}</td>
+                            <td>
+                                <button style="background-color: #008CBA;" onclick="showEditPage(${book.id})">Edit</button>
+                                <button style="background-color: #f44336;" onclick="deleteBook(${book.id})">Delete</button>
+                                <button style="background-color: #4CAF50;" onclick="showViewPage(${book.id})">View</button>
+                            </td>
+                        </tr>`;
+            bookList.innerHTML += row;
+        });
+    }
+
+    // Function to add a new book
+    document.getElementById('bookForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const title = document.getElementById('title').value;
+        const author = document.getElementById('author').value;
+        const pages = document.getElementById('pages').value;
+
+        // Generate unique ID for the new book
+        const id = new Date().getTime();
+
+        // Add the new book to the array
+        books.push({ id, title, author, pages: parseInt(pages) });
+
+        // Save the updated array to local storage
+        localStorage.setItem('books', JSON.stringify(books));
+
+        // Clear form fields
+        document.getElementById('bookForm').reset();
+
+        // Display the updated list of books
+        displayBooks();
+        showPage('home');
+    });
+
+    // Function to delete a book
+    function deleteBook(id) {
+        books = books.filter(book => book.id !== id);
+        localStorage.setItem('books', JSON.stringify(books));
+        displayBooks();
+    }
+
+    // Function to show the edit page
+    function showEditPage(id) {
+        const book = books.find(book => book.id === id);
+        if (book) {
+            document.getElementById('editId').value = book.id;
+            document.getElementById('editTitle').value = book.title;
+            document.getElementById('editAuthor').value = book.author;
+            document.getElementById('editPages').value = book.pages;
+            showPage('edit');
+        }
+    }
+
+    // Function to update a book
+    document.getElementById('editForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const id = parseInt(document.getElementById('editId').value);
+        const title = document.getElementById('editTitle').value;
+        const author = document.getElementById('editAuthor').value;
+        const pages = parseInt(document.getElementById('editPages').value);
+
+        const index = books.findIndex(book => book.id === id);
+        if (index !== -1) {
+            books[index] = { id, title, author, pages };
+            localStorage.setItem('books', JSON.stringify(books));
+            displayBooks();
+            showPage('home');
+        }
+    });
+
+    // Function to show the view page
+    function showViewPage(id) {
+        const book = books.find(book => book.id === id);
+        if (book) {
+            const message = `Title: ${book.title}\nAuthor: ${book.author}\nPages: ${book.pages}`;
+            alert(message);
+        }
+    }
+
+    // Function to show a specific page
+    function showPage(page) {
+        document.getElementById('homePage').style.display = 'none';
+        document.getElementById('addPage').style.display = 'none';
+        document.getElementById('editPage').style.display = 'none';
+
+        if (page === 'home') {
+            document.getElementById('homePage').style.display = 'block';
+        } else if (page === 'add') {
+            document.getElementById('addPage').style.display = 'block';
+        } else if (page === 'edit') {
+            document.getElementById('editPage').style.display = 'block';
+        }
+    }
+
+    // Initial display of books
+    displayBooks();
+</script>
+
+</body>
+</html>
